@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Hello World!</title>
+</head>
+
+<body>
+  <div>
+    A <input type="text" id="tbxA" />
+  </div>
+  <div>
+    B <input type="text" id="tbxB" />
+  </div>
+  <div>
+    <input type="button" value="+" id="btnPlus" onclick="Calculate('+');" style="background: white" />
+    <input type="button" value="-" id="btnMinus" onclick="Calculate('-');" style="background: white" />
+    <input type="button" value="x" id="btnMultiple" onclick="Calculate('x');" style="background: white" />
+    <input type="button" value="/" id="btnDivide" onclick="Calculate('/');" style="background: white" />
+    <input type="button" value="POW" id="btnPow" onclick="Calculate('pow');" style="background: white" />
+  </div>
+  <div>
+    Result <input type="text" id="tbxResult" disabled />
+  </div>
+  <div>
+    <input type="button" id="btnLoad" value="Load" style="background: white" onclick="LoadState();" />
+    <input type="button" id="btnSave" value="Save" style="background: white" onclick="SaveState();" />
+  </div>
+
+  <script>
+    // You can also require other files to run in this process
+    require('./renderer.js')
+    const os = require('os');
+    const storage = require('electron-json-storage');
+    const defaultDataPath = storage.getDefaultDataPath();
+
+    function Calculate(calType) {
+      if (!isNaN(document.getElementById('tbxA').value) & !isNaN(document.getElementById('tbxB').value)) {
+        let valA = parseFloat(document.getElementById('tbxA').value);
+        let valB = parseFloat(document.getElementById('tbxB').value);
+        let result = '';
+        switch (calType) {
+          case '+':
+            highlight('btnPlus');
+            result = valA + valB;
+            break;
+          case '-':
+            highlight('btnMinus');
+            result = valA - valB;
+            break;
+          case 'x':
+            highlight('btnMultiple');
+            result = valA * valB;
+            break;
+          case '/':
+            highlight('btnDivide');
+            result = valA / valB;
+            break;
+          case 'pow':
+            highlight('btnPow');
+            let currentResult = document.getElementById('tbxResult').value;
+            if (!isNaN(currentResult)) {
+              var temp = parseFloat(currentResult);
+              result = temp * temp;
+            } else {
+              alert('Can not use power operation becaust result is not number.');
+            }
+            break;
+          default:
+            break;
+        }
+
+        document.getElementById('tbxResult').value = result;
+      } else {
+        alert('Input must be number');
+      }
+    }
+
+    var buttonClicked = null;
+    function highlight(id) {
+      if (buttonClicked != null) {
+        buttonClicked.style.background = "white";
+        buttonClicked.style.color = "black";
+      }
+
+      buttonClicked = document.getElementById(id);
+      buttonClicked.style.background = "black";
+      buttonClicked.style.color = "white";
+    }
+
+    function SaveState() {
+      storage.set('savestate',
+        {
+          inputA: document.getElementById('tbxA').value,
+          inputB: document.getElementById('tbxB').value,
+          operator: buttonClicked.id,
+          result: document.getElementById('tbxResult').value
+        },
+        function (error) {
+          if (error) {
+            alert(error);
+            throw error;
+          }
+        });
+    }
+
+    function LoadState() {
+      storage.get('savestate', function (error, data) {
+        if (error) {
+          alert('Error: ' + error);
+        } else {
+          if (data.inputA === undefined & data.inputB === undefined & data.operator === undefined & data.result === undefined) {
+            alert('Save data not found.');
+          } else {
+            document.getElementById('tbxA').value = data.inputA;
+            document.getElementById('tbxB').value = data.inputB;
+            document.getElementById('tbxResult').value = data.result;
+            highlight(data.operator);
+          }
+        }
+      });
+    }
+  </script>
+</body>
+
+</html>
