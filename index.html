@@ -14,14 +14,17 @@
     B <input type="text" id="tbxB" />
   </div>
   <div>
-    <input type="button" value="+" id="btnPlus" onclick="Calculate('+');" style="background: white" />
-    <input type="button" value="-" id="btnMinus" onclick="Calculate('-');" style="background: white" />
-    <input type="button" value="x" id="btnMultiple" onclick="Calculate('x');" style="background: white" />
-    <input type="button" value="/" id="btnDivide" onclick="Calculate('/');" style="background: white" />
-    <input type="button" value="POW" id="btnPow" onclick="Calculate('pow');" style="background: white" />
+    <input type="button" value="+" id="btnPl" onclick="Calculate('+');" style="background: white" />
+    <input type="button" value="-" id="btnMi" onclick="Calculate('-');" style="background: white" />
+    <input type="button" value="x" id="btnMu" onclick="Calculate('x');" style="background: white" />
+    <input type="button" value="/" id="btnDi" onclick="Calculate('/');" style="background: white" />
+    <input type="button" value="POW" id="btnPo" onclick="Calculate('pow');" style="background: white" />
   </div>
   <div>
     Result <input type="text" id="tbxResult" disabled />
+  </div>
+  <div>
+    <input type="checkbox" id="chkCloud" />Cloud Drive<br /> Username: <input type="text" id="tbxUser" maxlength="50" />
   </div>
   <div>
     <input type="button" id="btnLoad" value="Load" style="background: white" onclick="LoadState();" />
@@ -42,23 +45,23 @@
         let result = '';
         switch (calType) {
           case '+':
-            highlight('btnPlus');
+            highlight('btnPl');
             result = valA + valB;
             break;
           case '-':
-            highlight('btnMinus');
+            highlight('btnMi');
             result = valA - valB;
             break;
           case 'x':
-            highlight('btnMultiple');
+            highlight('btnMu');
             result = valA * valB;
             break;
           case '/':
-            highlight('btnDivide');
+            highlight('btnDi');
             result = valA / valB;
             break;
           case 'pow':
-            highlight('btnPow');
+            highlight('btnPo');
             let currentResult = document.getElementById('tbxResult').value;
             if (!isNaN(currentResult)) {
               var temp = parseFloat(currentResult);
@@ -90,36 +93,79 @@
     }
 
     function SaveState() {
-      storage.set('savestate',
-        {
-          inputA: document.getElementById('tbxA').value,
-          inputB: document.getElementById('tbxB').value,
-          operator: buttonClicked.id,
-          result: document.getElementById('tbxResult').value
-        },
-        function (error) {
-          if (error) {
-            alert(error);
-            throw error;
+
+      let chkCloud = document.getElementById('chkCloud').checked;
+
+      if (chkCloud) {
+        var request = require('request');
+
+        request.post({
+          headers: { 'content-type': 'application/json' },
+          url: 'http://reuters-test-api25610814075529.azurewebsites.net/api/calculator',
+          json: {
+            User: document.getElementById('tbxUser').value,
+            InputA: document.getElementById('tbxA').value,
+            InputB: document.getElementById('tbxB').value,
+            SelectedOperator: buttonClicked.id,
+            Result: document.getElementById('tbxResult').value
+          }
+        }, function (error, response, body) {
+          if (!error && response.statusCode == 200) {
+            alert(response);
+          } else {
+            alert('Error' + response.statusCode);
           }
         });
+      } else {
+        storage.set('savestate',
+          {
+            inputA: document.getElementById('tbxA').value,
+            inputB: document.getElementById('tbxB').value,
+            operator: buttonClicked.id,
+            result: document.getElementById('tbxResult').value
+          },
+          function (error) {
+            if (error) {
+              alert(error);
+              throw error;
+            }
+          });
+      }
     }
 
     function LoadState() {
-      storage.get('savestate', function (error, data) {
-        if (error) {
-          alert('Error: ' + error);
-        } else {
-          if (data.inputA === undefined & data.inputB === undefined & data.operator === undefined & data.result === undefined) {
-            alert('Save data not found.');
+      let chkCloud = document.getElementById('chkCloud').checked;
+
+      if (chkCloud) {
+        var request = require('request');
+        var username = document.getElementById('tbxUser').value;
+        var url = 'http://reuters-test-api25610814075529.azurewebsites.net/api/calculator/' + username;
+
+        request
+          .get(url)
+          .on('data', function (data) {
+            var jsonObject = JSON.parse(data);
+            document.getElementById('tbxA').value = jsonObject.InputA;
+            document.getElementById('tbxB').value = jsonObject.InputB;
+            document.getElementById('tbxResult').value = jsonObject.Result;
+            highlight(jsonObject.SelectedOperator);
+          });
+      } else {
+        storage.get('savestate', function (error, data) {
+          if (error) {
+            alert('Error: ' + error);
           } else {
-            document.getElementById('tbxA').value = data.inputA;
-            document.getElementById('tbxB').value = data.inputB;
-            document.getElementById('tbxResult').value = data.result;
-            highlight(data.operator);
+            if (data.inputA === undefined & data.inputB === undefined & data.operator === undefined & data.result === undefined) {
+              alert('Save data not found.');
+            } else {
+              document.getElementById('tbxA').value = data.inputA;
+              document.getElementById('tbxB').value = data.inputB;
+              document.getElementById('tbxResult').value = data.result;
+              highlight(data.operator);
+            }
           }
-        }
-      });
+        });
+      }
     }
   </script>
 </body>
